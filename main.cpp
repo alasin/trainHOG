@@ -229,8 +229,15 @@ static void showDetections(const vector<Rect>& found, Mat& imageData) {
         if (j == found.size())
             found_filtered.push_back(r);
     }
-    for (i = 0; i < found_filtered.size(); i++) {
-        Rect r = found_filtered[i];
+    for (i = 0; i < found.size(); i++) {
+        Rect r = found[i];
+	
+	/*if (found_filtered[i].x < 0)
+	    found_filtered[i].x = 0;
+	
+	if (found_filtered[i].y < 0)
+	    found_filtered[i].y = 0;*/
+	
         rectangle(imageData, r.tl(), r.br(), Scalar(64, 255, 64), 3);
     }
 }
@@ -278,11 +285,11 @@ static void detectTrainingSetTest(const HOGDescriptor& hog, const double hitThre
  * @param hitThreshold threshold value for detection
  * @param imageData
  */
-static void detectTest(const HOGDescriptor& hog, const double hitThreshold, Mat& imageData) {
-    vector<Rect> found;
+static void detectTest(const HOGDescriptor& hog, const double hitThreshold, Mat& imageData, vector<Rect>& found, vector<double>& weights) {
+    //vector<Rect> found;
     Size padding(Size(32, 32));
     Size winStride(Size(8, 8));
-    hog.detectMultiScale(imageData, found, hitThreshold, winStride, padding);
+    hog.detectMultiScale(imageData, found, weights, hitThreshold, winStride, padding, 1.05, 1);
     showDetections(found, imageData);
 }
 // </editor-fold>
@@ -297,7 +304,7 @@ int main(int argc, char** argv) {
 
     // <editor-fold defaultstate="collapsed" desc="Init">
     HOGDescriptor hog; // Use standard parameters here
-    hog.winSize = Size(64, 128); // Default training images size as used in paper
+    hog.winSize = Size(104, 40); // Default training images size as used in paper
     // Get the files to train from somewhere
     static vector<string> positiveTrainingImages;
     static vector<string> negativeTrainingImages;
@@ -305,6 +312,7 @@ int main(int argc, char** argv) {
     validExtensions.push_back("jpg");
     validExtensions.push_back("png");
     validExtensions.push_back("ppm");
+    validExtensions.push_back("pgm");
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Read image files">
@@ -405,20 +413,45 @@ int main(int argc, char** argv) {
     printf("Testing training phase using training set as test set (just to check if training is ok - no detection quality conclusion with this!)\n");
     detectTrainingSetTest(hog, hitThreshold, positiveTrainingImages, negativeTrainingImages);
     
+    /*
     printf("Testing custom detection using camera\n");
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened()) { // check if we succeeded
         printf("Error opening camera!\n");
         return EXIT_FAILURE;
-    }
+    }*/
+    
     Mat testImage;
-    while ((cvWaitKey(10) & 255) != 27) {
-        cap >> testImage; // get a new frame from camera
-//        cvtColor(testImage, testImage, CV_BGR2GRAY); // If you want to work on grayscale images
-        detectTest(hog, hitThreshold, testImage);
-        imshow("HOG custom detection", testImage);
+    int num_of_images = 170;
+    
+    
+    /***** Hard-coded values and filenames ********/
+    
+    FILE* fp = fopen("boundingboxesgrp1.txt", "w");
+    for(int i=0; i < num_of_images; i++)
+    {
+	char filename[50];
+	char filename2[50];
+	
+	vector<Rect> boxes;
+	vector<double> weights;
+	
+	sprintf(filename, "TestImages/test-%d.pgm", i);
+	testImage = imread(filename, 0);
+	//printf("%d\n", i);
+	detectTest(hog, hitThreshold, testImage, boxes, weights);
+	//hitThreshold = 0;
+	//detectTest(hog, 0, testImage, boxes, weights);
+	printf("BOXES: %ld \t WEIGHTS: %ld\n", boxes.size(), weights.size());
+	sprintf(filename2, "results/image-%d.pgm", i);
+	imwrite(filename2, testImage);
+	for(int j=0; j < boxes.size(); j++)
+	{
+	    fprintf(fp, "%s %d %d %d %d %f\n", filename, boxes[j].x, boxes[j].y, boxes[j].width, boxes[j].height, weights[j]);
+	}
+	printf("Threshold: %f\n", hitThreshold); 
     }
-    // </editor-fold>
-
+    fclose(fp);
+    
     return EXIT_SUCCESS;
 }
