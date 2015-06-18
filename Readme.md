@@ -33,8 +33,8 @@ What this program basically does:
 
 ## Preparation
 * `svmlight` directory contains the svm source files.
-* `pos` directory contains positive images to be trained.
-* `neg` directory contains negative images to be trained.
+* `pos` directory contains positive images to be trained. (Image dimensions need to be multiple of 8)
+* `neg` directory contains negative images to be trained. (Image dimensions need to be multiple of 8)
 * `TestImages` directory contains the images to be tested.
 * `result` directory would contain the resultant images with bounding boxes around the cars.
 
@@ -48,6 +48,8 @@ gcc -c -g `pkg-config --cflags opencv` -MMD -MP -MF svmlight/svm_hideo.o.d -o sv
 gcc -c -g `pkg-config --cflags opencv` -MMD -MP -MF svmlight/svm_common.o.d -o svmlight/svm_common.o svmlight/svm_common.c
 g++ `pkg-config --cflags opencv` -o opencvhogtrainer main.o svmlight/svm_learn.o svmlight/svm_hideo.o svmlight/svm_common.o `pkg-config --libs opencv`
 ```
+
+Then run using `./opencvhogtrainer`.
 
 ## Warning words
 * At least one of the functions (opendir) doing file system operations is 

@@ -427,7 +427,7 @@ int main(int argc, char** argv) {
     
     /***** Hard-coded values and filenames ********/
     
-    FILE* fp = fopen("boundingboxesgrp1.txt", "w");
+    FILE* fp = fopen("boundingboxesinfo.txt", "w");
     for(int i=0; i < num_of_images; i++)
     {
 	char filename[50];
